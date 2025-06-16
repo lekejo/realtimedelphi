@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Survey - {{ study.title }}{% endblock %}
+
+{% block content %}
+<h1>{{ study.title }}</h1>
+<p><strong>Participant Access Code:</strong> {{ participant.access_code }}</p>
+<hr>
+<p><em>{{ study.description | nl2br }}</em></p>
+<hr>
+
+{% if questions %}
+    <form method="POST" action="{{ url_for('survey.display_and_submit_questionnaire', access_code=participant.access_code) }}">
+        {# CSRF token will be needed if Flask-WTF or similar is integrated #}
+
+        {% for question in questions %}
+            {% set current_answer = answers_map.get(question.id) %}
+            <div class="question-block" id="question_block_{{ question.id }}" style="margin-bottom: 20px; padding: 10px; border: 1px solid #eee;">
+                <h3>Question {{ loop.index }}:</h3>
+                <p>{{ question.text | nl2br }}</p>
+
+                {% if question.question_type == 'scale' %}
+                    <div style="margin-bottom: 10px;">
+                        <label for="numerical_q_{{ question.id }}">Your Rating ({{ question.scale_min }} to {{ question.scale_max }}):</label><br>
+                        <input type="number"
+                               id="numerical_q_{{ question.id }}"
+                               name="numerical_q_{{ question.id }}"
+                               min="{{ question.scale_min }}"
+                               max="{{ question.scale_max }}"
+                               value="{{ current_answer.numerical_response if current_answer and current_answer.numerical_response is not none else '' }}"
+                               style="width: 100px; padding: 5px;">
+                    </div>
+                {% endif %}
+
+                <div>
+                    <label for="text_q_{{ question.id }}">Reasoning / Additional Comments:</label><br>
+                    <textarea id="text_q_{{ question.id }}"
+                              name="text_q_{{ question.id }}"
+                              rows="4"
+                              style="width: 95%; padding: 5px;">{{ current_answer.text_response if current_answer else '' }}</textarea>
+                </div>
+
+                {# Group Feedback Section #}
+                {% if question.question_type == 'scale' %}
+                    {% set stats = group_stats_map.get(question.id) %}
+                    <div class="group-feedback" style="margin-top: 15px; padding: 10px; background-color: #f9f9f9; border: 1px solid #e0e0e0;">
+                        <h4>Group Feedback (Question {{ loop.index }})</h4>
+                        {% if stats and stats.count > 0 %}
+                            <p>Group Average: <strong class="group-avg-{{ question.id }}">{{ stats.average | round(2) if stats.average is not none else 'N/A' }}</strong></p>
+                            <p>Group Median: <strong class="group-median-{{ question.id }}">{{ stats.median if stats.median is not none else 'N/A' }}</strong></p>
+                            <p>Number of Respondents: <strong class="group-count-{{ question.id }}">{{ stats.count }}</strong></p>
+                            <p class="no-group-stats-{{ question.id }}" style="display:none;">No group responses yet for this question.</p> {# Hidden initially if stats exist #}
+                        {% else %}
+                            {# These p tags with strong tags inside are for JS to easily find and update, initially hidden or showing N/A #}
+                            <p style="display:none;">Group Average: <strong class="group-avg-{{ question.id }}">N/A</strong></p>
+                            <p style="display:none;">Group Median: <strong class="group-median-{{ question.id }}">N/A</strong></p>
+                            <p>Number of Respondents: <strong class="group-count-{{ question.id }}">0</strong></p>
+                            <p class="no-group-stats-{{ question.id }}">No group responses yet for this question.</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                {# Anonymous Qualitative Reasons Section - applies to all question types #}
+                {% set reasons = qualitative_feedback_map.get(question.id) %}
+                <div class="qualitative-feedback" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc;">
+                    <h5>Anonymous Reasons from Other Participants:</h5>
+                    <ul class="qualitative-reasons-list-{{ question.id }}" style="list-style-type: disc; margin-left: 20px;">
+                        {% if reasons and reasons|length > 0 %}
+                            {% for reason in reasons %}
+                                <li style="margin-bottom: 5px;">{{ reason | nl2br }}</li>
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
+                    <p class="no-qualitative-reasons-{{ question.id }}" {% if reasons and reasons|length > 0 %}style="display:none;"{% else %}style="display:block;"{% endif %}>
+                        <small>No qualitative reasons submitted by other participants yet for this question.</small>
+                    </p>
+                </div>
+            </div>
+        {% endfor %}
+
+        <button type="submit" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; cursor: pointer;">
+            Save Answers
+        </button>
+    </form>
+{% else %}
+    <p>This study currently has no questions. Please check back later or contact the administrator.</p>
+{% endif %}
+
+<p style="margin-top: 30px;"><a href="{{ url_for('index') }}">Back to Home</a></p> {# Or a more relevant link #}
+
+<script src="https://cdn.socket.io/4.5.2/socket.io.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var socket = io(); // Connect to the server, assumes server is serving on same host/port
+
+    var studyIdString = "{{ study.id }}"; // Get study_id from Flask template, ensure it's treated as a string for room names
+
+    // Join study room on page load
+    if (studyIdString) {
+        socket.emit('join_study_room', {'study_id': studyIdString});
+    }
+
+    // Handle leaving the room when the user navigates away or closes the tab
+    window.addEventListener('beforeunload', function() {
+        if (studyIdString) {
+            socket.emit('leave_study_room', {'study_id': studyIdString});
+        }
+    });
+
+    // Listen for feedback updates
+    socket.on('feedback_updated', function(data) {
+        var questionId = data.question_id;
+        var stats = data.stats;
+        var reasons = data.reasons; // These are reasons from OTHERS
+
+        var qBlock = document.getElementById('question_block_' + questionId);
+        if (!qBlock) {
+            // console.error('Could not find question block for ID: ' + questionId);
+            return;
+        }
+
+        // Update quantitative feedback (average, median, count)
+        var avgElem = qBlock.querySelector('.group-avg-' + questionId);
+        var medianElem = qBlock.querySelector('.group-median-' + questionId);
+        var countElem = qBlock.querySelector('.group-count-' + questionId);
+        var noStatsMsgElem = qBlock.querySelector('.no-group-stats-' + questionId);
+
+        // Parent p tags of stats for showing/hiding
+        var pAvg = avgElem ? avgElem.closest('p') : null;
+        var pMedian = medianElem ? medianElem.closest('p') : null;
+        // Count p tag is usually always shown, but its value changes.
+
+        if (stats && stats.count > 0) {
+            if (avgElem) avgElem.textContent = stats.average !== null ? stats.average.toFixed(2) : 'N/A';
+            if (medianElem) medianElem.textContent = stats.median !== null ? stats.median.toFixed(1) : 'N/A'; // Median might be float
+            if (countElem) countElem.textContent = stats.count;
+
+            if (noStatsMsgElem) noStatsMsgElem.style.display = 'none';
+            if (pAvg) pAvg.style.display = 'block';
+            if (pMedian) pMedian.style.display = 'block';
+        } else {
+            if (avgElem) avgElem.textContent = 'N/A';
+            if (medianElem) medianElem.textContent = 'N/A';
+            if (countElem) countElem.textContent = '0';
+
+            if (noStatsMsgElem) noStatsMsgElem.style.display = 'block';
+            if (pAvg) pAvg.style.display = 'none';
+            if (pMedian) pMedian.style.display = 'none';
+        }
+
+        // Update qualitative feedback (anonymous reasons)
+        var reasonsListElem = qBlock.querySelector('.qualitative-reasons-list-' + questionId);
+        var noReasonsMsgElem = qBlock.querySelector('.no-qualitative-reasons-' + questionId);
+
+        if (reasonsListElem) {
+            reasonsListElem.innerHTML = ''; // Clear existing reasons
+            if (reasons && reasons.length > 0) {
+                reasons.forEach(function(reasonText) {
+                    var li = document.createElement('li');
+                    li.style.marginBottom = '5px';
+                    // Basic XSS prevention: use textContent. If nl2br is needed, do it safely.
+                    // For nl2br, split by newline and append text nodes and <br> elements.
+                    reasonText.split('\\n').forEach(function(line, index, arr) {
+                        li.appendChild(document.createTextNode(line));
+                        if (index < arr.length - 1) {
+                            li.appendChild(document.createElement('br'));
+                        }
+                    });
+                    reasonsListElem.appendChild(li);
+                });
+                if (noReasonsMsgElem) noReasonsMsgElem.style.display = 'none';
+            } else {
+                if (noReasonsMsgElem) noReasonsMsgElem.style.display = 'block';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

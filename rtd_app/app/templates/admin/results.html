@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Results - {{ study.title }}{% endblock %}
+
+{% block content %}
+<h1>Results: {{ study.title }}</h1>
+<p><a href="{{ url_for('admin.study_detail', study_id=study.id) }}">Back to Study Details</a> |
+   <a href="{{ url_for('admin.export_study_results', study_id=study.id) }}">Export Results as CSV</a></p>
+<hr>
+
+{% if questions %}
+    {% for question in questions %}
+        <div class="question-results" style="margin-bottom: 40px; padding: 15px; border: 1px solid #ccc; background-color: #fdfdfd;">
+            <h3>Question {{ loop.index }}: {{ question.text | nl2br }}</h3>
+            <p><em>Type: {{ question.question_type }}</em></p>
+
+            {% if question.question_type == 'scale' %}
+                <h4>Quantitative Responses (Scale: {{ question.scale_min }} to {{ question.scale_max }})</h4>
+                {% set q_chart_data = chart_data.get(question.id) %}
+                {% if q_chart_data and q_chart_data.data %}
+                    <div style="width: 80%; max-width: 600px; margin-bottom: 20px;">
+                        <canvas id="chart_q{{ question.id }}"></canvas>
+                    </div>
+                {% else %}
+                    <p>No numerical responses recorded for this question yet.</p>
+                {% endif %}
+            {% endif %}
+
+            <h4>Qualitative Responses:</h4>
+            {% set q_qualitative_data = qualitative_data.get(question.id) %}
+            {% if q_qualitative_data and q_qualitative_data|length > 0 %}
+                <ul style="list-style-type: square; margin-left: 20px; max-height: 300px; overflow-y: auto; background-color: #f0f0f0; padding:10px; border: 1px solid #e0e0e0;">
+                    {% for response in q_qualitative_data %}
+                        <li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dotted #ccc;">{{ response | nl2br }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No qualitative responses recorded for this question yet.</p>
+            {% endif %}
+        </div>
+        {% if not loop.last %}<hr style="border-top: 1px dashed #eee; margin: 30px 0;">{% endif %}
+    {% endfor %}
+{% else %}
+    <p>This study has no questions defined.</p>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% for question in questions %}
+        {% if question.question_type == 'scale' %}
+            {% set q_chart_data = chart_data.get(question.id) %}
+            {% if q_chart_data and q_chart_data.data %}
+                var ctx_q{{ question.id }} = document.getElementById('chart_q{{ question.id }}').getContext('2d');
+                new Chart(ctx_q{{ question.id }}, {
+                    type: 'bar',
+                    data: {
+                        labels: {{ q_chart_data.labels | tojson }},
+                        datasets: [{
+                            label: 'Frequency of Responses',
+                            data: {{ q_chart_data.data | tojson }},
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1 // Ensure y-axis shows whole numbers for counts
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Response Value (Scale: {{ q_chart_data.scale_min }} to {{ q_chart_data.scale_max }})'
+                                }
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: true
+                    }
+                });
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ study.title }}</h1>
+<p><strong>Description:</strong></p>
+<p>{{ study.description | nl2br }}</p>
+<p><strong>Start Date:</strong> {{ study.start_date.strftime('%Y-%m-%d') }}</p>
+<p><strong>End Date:</strong> {{ study.end_date.strftime('%Y-%m-%d') }}</p>
+<p><strong>Admin ID:</strong> {{ study.admin_id }}</p> {# Later, show admin username #}
+
+<hr>
+<h2>Questions</h2>
+<p><a href="{{ url_for('admin.add_question', study_id=study.id) }}">Add New Question</a></p>
+{% if questions %}
+    <ul>
+        {% for question in questions %}
+            <li>
+                <p><strong>Text:</strong> {{ question.text }}</p>
+                <p><strong>Type:</strong> {{ question.question_type }}
+                    {% if question.question_type == 'scale' %}
+                        (Min: {{ question.scale_min }}, Max: {{ question.scale_max }})
+                    {% endif %}
+                </p>
+                <form method="POST" action="{{ url_for('admin.delete_question', question_id=question.id) }}" style="display:inline;">
+                    <button type="submit" onclick="return confirm('Are you sure you want to delete this question?');">Delete Question</button>
+                </form>
+            </li>
+            <hr>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No questions have been added to this study yet.</p>
+{% endif %}
+
+<hr>
+<h2>Participant Management</h2>
+<form method="POST" action="{{ url_for('admin.generate_participants', study_id=study.id) }}">
+    <div>
+        <label for="number_of_participants">Number of new participants to generate:</label>
+        <input type="number" id="number_of_participants" name="number_of_participants" min="1" value="10" required>
+        <button type="submit">Generate Participants</button>
+    </div>
+</form>
+
+<h3>Generated Participants:</h3>
+{% if participants %}
+    <table border="1" style="width:100%; border-collapse: collapse; margin-top:10px;">
+        <thead>
+            <tr>
+                <th style="padding: 8px; text-align: left;">Access Code</th>
+                <th style="padding: 8px; text-align: left;">Status</th>
+                <th style="padding: 8px; text-align: left;">Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in participants %}
+            <tr>
+                <td style="padding: 8px;">{{ p.access_code }}</td>
+                <td style="padding: 8px;">{{ p.status }}</td>
+                <td style="padding: 8px;">{{ p.created_at.strftime('%Y-%m-%d %H:%M:%S') if p.created_at else 'N/A' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No participants have been generated for this study yet.</p>
+{% endif %}
+
+<hr style="margin-top: 30px; margin-bottom: 15px;">
+<p>
+    <a href="{{ url_for('admin.study_results', study_id=study.id) }}" style="padding: 8px 15px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px;">View Results & Export Data</a>
+</p>
+
+<p style="margin-top: 20px;"><a href="{{ url_for('admin.list_studies') }}">Back to Studies List</a></p>
+{% endblock %}

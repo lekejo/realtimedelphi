@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Add Question - {{ study.title }}{% endblock %}
+
+{% block content %}
+<h1>Add Question to "{{ study.title }}"</h1>
+
+<form method="POST" action="{{ url_for('admin.add_question', study_id=study.id) }}">
+    <div>
+        <label for="text">Question Text:</label><br>
+        <textarea id="text" name="text" rows="4" cols="50" required>{{ request.form.text or current_text }}</textarea>
+    </div>
+    <div>
+        <label for="question_type">Question Type:</label>
+        <select id="question_type" name="question_type" required>
+            <option value="">Select a type</option>
+            <option value="scale" {% if (request.form.question_type or current_type) == 'scale' %}selected{% endif %}>Scale</option>
+            <option value="open_ended" {% if (request.form.question_type or current_type) == 'open_ended' %}selected{% endif %}>Open-Ended</option>
+        </select>
+    </div>
+    <div id="scale_fields" style="display:none;">
+        <label for="scale_min">Scale Minimum:</label>
+        <input type="number" id="scale_min" name="scale_min" value="{{ request.form.scale_min or current_min }}">
+        <br>
+        <label for="scale_max">Scale Maximum:</label>
+        <input type="number" id="scale_max" name="scale_max" value="{{ request.form.scale_max or current_max }}">
+    </div>
+    <div>
+        <button type="submit">Add Question</button>
+    </div>
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var questionTypeSelect = document.getElementById('question_type');
+        var scaleFieldsDiv = document.getElementById('scale_fields');
+
+        function toggleScaleFields() {
+            if (questionTypeSelect.value === 'scale') {
+                scaleFieldsDiv.style.display = 'block';
+                // Make scale fields required when visible
+                document.getElementById('scale_min').required = true;
+                document.getElementById('scale_max').required = true;
+            } else {
+                scaleFieldsDiv.style.display = 'none';
+                // Make scale fields not required when hidden
+                document.getElementById('scale_min').required = false;
+                document.getElementById('scale_max').required = false;
+            }
+        }
+
+        // Call on page load to set initial state
+        toggleScaleFields();
+
+        // Add event listener
+        questionTypeSelect.addEventListener('change', toggleScaleFields);
+    });
+</script>
+
+<p><a href="{{ url_for('admin.study_detail', study_id=study.id) }}">Back to Study Details</a></p>
+{% endblock %}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RTD App{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
+        header { background-color: #333; color: #fff; padding: 1rem 0; text-align: center; }
+        nav ul { list-style-type: none; padding: 0; text-align: center; }
+        nav ul li { display: inline; margin-right: 20px; }
+        nav a { color: #fff; text-decoration: none; }
+        .container { width: 80%; margin: auto; overflow: hidden; padding: 20px; background-color: #fff; }
+        .flashes { list-style-type: none; padding: 0; }
+        .flashes li.error { background-color: #ffdddd; border: 1px solid #fbc2c4; color: #d8000c; padding: 10px; margin-bottom: 10px; }
+        .flashes li.success { background-color: #ddffdd; border: 1px solid #c2fbc9; color: #005200; padding: 10px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('admin.list_studies') }}">Admin Dashboard</a></li>
+                    <li><span>Logged in as: {{ current_user.username }}</span></li>
+                    <li><a href="{{ url_for('admin.logout') }}">Logout</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('admin.login') }}">Admin Login</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+    <div class="container">
+        {# Flash messages are already handled by the login.html or other specific templates if needed.
+           Or, keep it here for global messages. For now, admin.login handles its own.
+           If kept global, ensure styling is consistent.
+        #}
+        {% with global_messages = get_flashed_messages(with_categories=true, category_filter=['info', 'success', 'warning', 'danger']) %}
+            {% if global_messages %}
+                <ul class="flashes" style="padding:0; list-style-type:none;">
+                {% for category, message in global_messages %}
+                  <li class="{{ category }}" style="padding: 10px; margin-bottom: 15px; border-radius: 4px; background-color: {% if category == 'danger' %}#f8d7da{% elif category == 'success' %}#d4edda{% elif category == 'info' %}#d1ecf1{% else %}#fff3cd{% endif %}; color: {% if category == 'danger' %}#721c24{% elif category == 'success' %}#155724{% elif category == 'info' %}#0c5460{% else %}#856404{% endif %}; border: 1px solid {% if category == 'danger' %}#f5c6cb{% elif category == 'success' %}#c3e6cb{% elif category == 'info' %}#bee5eb{% else %}#ffeeba{% endif %};">
+                    {{ message }}
+                  </li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
