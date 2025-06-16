@@ -1,5 +1,5 @@
 from flask import Flask
-from rtd_app.config import Config, TestingConfig # Import TestingConfig
+from ..config import Config, TestingConfig # Import TestingConfig using relative import
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_socketio import SocketIO

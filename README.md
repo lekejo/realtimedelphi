@@ -23,7 +23,7 @@ Before you begin, ensure you have the following installed on your system:
 *   **pip:** Python's package installer. It usually comes with Python installations (version 3.4+).
 *   **(Optional) PostgreSQL:** While the application defaults to using SQLite (which requires no separate installation), for a production environment, you might consider using PostgreSQL. If you choose to use PostgreSQL, you will need to install it separately and configure the `SQLALCHEMY_DATABASE_URI` in `config.py`. Instructions for PostgreSQL setup are beyond the scope of this README.
 
-Ensure that `python` and `git` commands are accessible from your terminal or command prompt. You can check this by typing `python --version` and `git --version`.
+Ensure that `python` (or `python3` on some systems) and `git` commands are accessible from your terminal or command prompt. You can check this by typing `python --version` (or `python3 --version`) and `git --version`.
 
 ## Getting Started
 
@@ -34,16 +34,16 @@ Follow these steps to get the application running on your local machine.
 First, clone the project repository to your local machine using Git. Open your terminal or command prompt and run:
 
 ```bash
-git clone https://github.com/your-username/your-repository-name.git
+git clone <your-repository-url-here>
 ```
-*(Replace `https://github.com/your-username/your-repository-name.git` with the actual URL of this repository.)*
+*(Replace `<your-repository-url-here>` with the actual URL of this repository.)*
 
 Navigate into the cloned project directory:
 
 ```bash
 cd your-repository-name
 ```
-*(Replace `your-repository-name` with the actual directory name.)*
+*(Replace `your-repository-name` with the actual directory name, e.g., `rtd-app`.)*
 
 The following sections provide OS-specific instructions for setting up the environment, installing dependencies, and running the application.
 
@@ -71,17 +71,17 @@ pip install -r requirements.txt
 
 **4. Initialize the Database**
 
-Set the `FLASK_APP` environment variable and then initialize the database. The `db init` and `db migrate` commands only need to be run once for the initial setup if the `migrations` folder does not exist or is empty.
+Set the `FLASK_APP` environment variable and then initialize the database.
 
 ```bash
-set FLASK_APP=run.py
+set FLASK_APP=rtd_app\run.py
 flask db init
 flask db migrate -m "Initial database setup"
 flask db upgrade
 ```
-*   If you encounter an error like "Error: Could not locate Flask application," ensure you are in the project's root directory (where `run.py` is located) and that `FLASK_APP` is set correctly.
+*   If you encounter an error like "Error: Could not locate Flask application," ensure you are in the project's root directory and that `FLASK_APP` is set correctly to point to the `run.py` file within the `rtd_app` directory.
 *   The `flask db init` command is only needed if the `migrations` directory is not present. If it exists, you can skip it.
-*   The `flask db migrate` command is typically for generating new migrations when models change. For the first-time setup, if `migrations/versions` is empty, this helps create an initial migration. If migrations already exist from the repository, this command might not be necessary or might produce an empty migration. The key command for setup is `flask db upgrade`.
+*   The `flask db migrate -m "Initial database setup"` command is generally needed only if you are setting up migrations from scratch (e.g., the `migrations/versions` directory is empty or you just ran `flask db init`). If the repository already contains migration scripts, you can usually skip `flask db init` and `flask db migrate`, and proceed directly to `flask db upgrade`. If unsure, running `flask db upgrade` first will tell you if the database is uninitialized or if migrations are pending.
 
 **5. Create an Administrator User**
 
@@ -97,9 +97,9 @@ Example: `flask create-admin admin securepassword123`
 Start the Flask development server:
 
 ```bash
-python run.py
+python rtd_app\run.py
 ```
-*(This assumes `run.py` uses `socketio.run(app, ...)` for Flask-SocketIO. If it uses `app.run(...)`, then `flask run` would be the command, but `python run.py` is generally safer for SocketIO applications).*
+*(This assumes `run.py` uses `socketio.run(app, ...)` for Flask-SocketIO. If it uses `app.run(...)`, then `flask run` would be the command, but `python rtd_app\run.py` is generally safer for SocketIO applications when `run.py` is structured to handle it).*
 
 Once the server is running, you should see output indicating it's serving on `http://127.0.0.1:5000/` (or a similar address). You can access the application by opening this URL in your web browser.
 
@@ -127,17 +127,17 @@ pip install -r requirements.txt
 
 **4. Initialize the Database**
 
-Set the `FLASK_APP` environment variable and then initialize the database. The `db init` and `db migrate` commands only need to be run once for the initial setup if the `migrations` folder does not exist or is empty.
+Set the `FLASK_APP` environment variable and then initialize the database.
 
 ```bash
-export FLASK_APP=run.py
+export FLASK_APP=rtd_app/run.py
 flask db init
 flask db migrate -m "Initial database setup"
 flask db upgrade
 ```
-*   If you encounter an error like "Error: Could not locate Flask application," ensure you are in the project's root directory (where `run.py` is located) and that `FLASK_APP` is set correctly.
+*   If you encounter an error like "Error: Could not locate Flask application," ensure you are in the project's root directory and that `FLASK_APP` is set correctly to point to the `run.py` file within the `rtd_app` directory.
 *   The `flask db init` command is only needed if the `migrations` directory is not present. If it exists, you can skip it.
-*   The `flask db migrate` command is typically for generating new migrations when models change. For the first-time setup, if `migrations/versions` is empty, this helps create an initial migration. If migrations already exist from the repository, this command might not be necessary or might produce an empty migration. The key command for setup is `flask db upgrade`.
+*   The `flask db migrate -m "Initial database setup"` command is generally needed only if you are setting up migrations from scratch (e.g., the `migrations/versions` directory is empty or you just ran `flask db init`). If the repository already contains migration scripts, you can usually skip `flask db init` and `flask db migrate`, and proceed directly to `flask db upgrade`. If unsure, running `flask db upgrade` first will tell you if the database is uninitialized or if migrations are pending.
 
 **5. Create an Administrator User**
 
@@ -153,9 +153,9 @@ Example: `flask create-admin admin securepassword123`
 Start the Flask development server:
 
 ```bash
-python run.py
+python rtd_app/run.py
 ```
-*(This assumes `run.py` uses `socketio.run(app, ...)` for Flask-SocketIO. If it uses `app.run(...)`, then `flask run` would be the command, but `python run.py` is generally safer for SocketIO applications).*
+*(This assumes `run.py` uses `socketio.run(app, ...)` for Flask-SocketIO. If it uses `app.run(...)`, then `flask run` would be the command, but `python rtd_app/run.py` is generally safer for SocketIO applications when `run.py` is structured to handle it).*
 
 The application should now be running on `http://127.0.0.1:5000/`. Open this URL in your web browser.
 
@@ -184,17 +184,17 @@ pip install -r requirements.txt
 
 **4. Initialize the Database**
 
-Set the `FLASK_APP` environment variable and then initialize the database. The `db init` and `db migrate` commands only need to be run once for the initial setup if the `migrations` folder does not exist or is empty.
+Set the `FLASK_APP` environment variable and then initialize the database.
 
 ```bash
-export FLASK_APP=run.py
+export FLASK_APP=rtd_app/run.py
 flask db init
 flask db migrate -m "Initial database setup"
 flask db upgrade
 ```
-*   If you encounter an error like "Error: Could not locate Flask application," ensure you are in the project's root directory (where `run.py` is located) and that `FLASK_APP` is set correctly.
+*   If you encounter an error like "Error: Could not locate Flask application," ensure you are in the project's root directory and that `FLASK_APP` is set correctly to point to the `run.py` file within the `rtd_app` directory.
 *   The `flask db init` command is only needed if the `migrations` directory is not present. If it exists, you can skip it.
-*   The `flask db migrate` command is typically for generating new migrations when models change. For the first-time setup, if `migrations/versions` is empty, this helps create an initial migration. If migrations already exist from the repository, this command might not be necessary or might produce an empty migration. The key command for setup is `flask db upgrade`.
+*   The `flask db migrate -m "Initial database setup"` command is generally needed only if you are setting up migrations from scratch (e.g., the `migrations/versions` directory is empty or you just ran `flask db init`). If the repository already contains migration scripts, you can usually skip `flask db init` and `flask db migrate`, and proceed directly to `flask db upgrade`. If unsure, running `flask db upgrade` first will tell you if the database is uninitialized or if migrations are pending.
 
 **5. Create an Administrator User**
 
@@ -210,9 +210,9 @@ Example: `flask create-admin admin securepassword123`
 Start the Flask development server:
 
 ```bash
-python run.py
+python rtd_app/run.py
 ```
-*(This assumes `run.py` uses `socketio.run(app, ...)` for Flask-SocketIO. If it uses `app.run(...)`, then `flask run` would be the command, but `python run.py` is generally safer for SocketIO applications).*
+*(This assumes `run.py` uses `socketio.run(app, ...)` for Flask-SocketIO. If it uses `app.run(...)`, then `flask run` would be the command, but `python rtd_app/run.py` is generally safer for SocketIO applications when `run.py` is structured to handle it).*
 
 The application will typically be available at `http://127.0.0.1:5000/`. Open this URL in your web browser.
 
@@ -226,6 +226,7 @@ To update the application to the latest version, follow these steps:
     ```bash
     cd path/to/your-repository-name
     ```
+    *(Replace `path/to/your-repository-name` with the actual path to your project.)*
 
 2.  **Activate Virtual Environment:**
     Ensure your project's virtual environment is activated.
@@ -240,7 +241,7 @@ To update the application to the latest version, follow these steps:
         ```
 
 3.  **Pull Latest Changes:**
-    Fetch the latest code from the repository. If you are on the `main` branch, you can use:
+    Fetch the latest code from the repository. If you are on the `main` branch (or your primary development branch), you can use:
 
     ```bash
     git pull origin main
@@ -258,7 +259,7 @@ To update the application to the latest version, follow these steps:
     If there have been changes to the database schema, apply them:
 
     ```bash
-    # Ensure FLASK_APP is set (e.g., export FLASK_APP=run.py or set FLASK_APP=run.py)
+    # Ensure FLASK_APP is set (e.g., export FLASK_APP=rtd_app/run.py or set FLASK_APP=rtd_app\run.py for Windows)
     flask db upgrade
     ```
 
@@ -266,9 +267,9 @@ To update the application to the latest version, follow these steps:
     If the application was running, stop it (usually `Ctrl+C` in the terminal) and restart it to apply all changes:
 
     ```bash
-    python run.py
+    python rtd_app/run.py
     ```
-    (Or `flask run` if applicable)
+    (Or `flask run` if applicable, ensuring `FLASK_APP` is set correctly)
 
 By following these steps, your local instance of the application will be updated with the latest features, bug fixes, and dependency changes.
 
@@ -287,7 +288,7 @@ Once you have completed the setup steps for your operating system (see the "[Get
     Use the command appropriate for this application (which includes Flask-SocketIO):
 
     ```bash
-    python run.py
+    python rtd_app/run.py
     ```
     You should see output in your terminal indicating that the development server is running, typically on `http://127.0.0.1:5000/`.
 
@@ -359,3 +360,4 @@ We welcome contributions! Please see `CONTRIBUTING.md` for details (if such a fi
 
 (Placeholder - Optional)
 This project is licensed under the MIT License - see the `LICENSE` file for details (if such a file exists).
+```
